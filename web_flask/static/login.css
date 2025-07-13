@@ -1,0 +1,152 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.container {
+    display: grid;
+    height: 100vh;
+    grid-template-columns: 1fr 2fr;
+    
+}
+
+
+.left-section {
+    flex: 1;
+    padding: 50px;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .branding h1 {
+    color: #420202;
+    font-size: 32px;
+    margin-bottom: 20px;
+  }
+
+  .title h2 {
+    font-size: 28px;
+    color: #420202;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .welcome-text {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 30px;
+  }
+  
+  .login-form .input-group {
+    margin-bottom: 20px;
+  }
+  
+  .login-form .input-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.login-form .input-group input:focus {
+    border-color: #420202;
+    outline: none;
+    box-shadow: 0 0 5px #420202;
+  }
+  
+  .options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+  
+  .options .forgot-password {
+    text-decoration: none;
+    color: #420202;
+  }
+  
+  .options .forgot-password:hover {
+    text-decoration: underline;
+  }
+  
+  .buttons {
+    display: flex;
+    gap: 15px;
+  }
+  
+  .buttons .login-btn {
+    background-color: #420202;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .buttons .login-btn:hover {
+    background-color: #420202;
+  }
+  
+  .buttons .signup-btn {
+    background-color: transparent;
+    color: #420202;
+    padding: 10px 20px;
+    border: 2px solid #420202;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .buttons .signup-btn:hover {
+    background-color: #420202;
+    color: #fff;
+  }
+  
+
+  .right-section {
+    flex: 1;
+    background-image: url(../images/login-background.png);
+    background-size: cover;
+   background-repeat: no-repeat;
+   background-position: center;
+    padding: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .navigation {
+    display: flex;
+    gap: 20px;
+    justify-content: flex-end;
+  }
+  
+  .nav-link {
+    text-decoration: none;
+    color: #333;
+    font-size: 14px;
+    padding: 5px;
+  }
+  
+  
+  .nav-link:hover {
+    color: #420202;
+    border-bottom: 2px solid #420202;
+    transform: scale(1.2);
+  }
+  
+ 

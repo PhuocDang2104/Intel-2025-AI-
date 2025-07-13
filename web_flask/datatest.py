@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def show_table():
-    file_path = r'C:\Users\ADMIN\Desktop\Intel 2025 AI\ai_models\AI Spectral MLP\data_nir\nir_spectral_dataset_augmented.csv'
+    file_path = r'C:\Users\ADMIN\Desktop\Intel 2025 AI\ai_models\AI Spectral MLP\data_nir\nir_spectral_dataset_augmented_v4.csv'
     delimiters = [',', ';', '\t']
 
     for d in delimiters:

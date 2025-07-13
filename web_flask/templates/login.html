@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Page</title>
+<link rel="stylesheet" href="../static/login.css">
+</head>
+<body>
+<div class="container">
+    <div class="left-section">
+    <div class="branding">
+        <h1>A.I.M.I.N.G - AIoT Infravision for Monitoring, Inspection & Grading in Agriculture</h1>
+    </div>
+    <div class="title">
+
+    </div>
+    <p class="welcome-text">Welcome back Farmers! Please login to your account.</p>
+    <form class="login-form">
+        <div class="input-group">
+        <input type="email" id="email" placeholder="Email Address" required>
+        </div>
+        <div class="input-group">
+        <input type="password" id="password" placeholder="Password" required>
+        </div>
+        <div class="options">
+        <label>
+            <input type="checkbox" id="remember-me"> Remember Me
+        </label>
+        <a href="#" class="forgot-password">Forgot Password?</a>
+        </div>
+        <div class="buttons">
+        <button id="home" type="submit" class="login-btn">Login</button>
+        <script>
+            document.getElementById('home').addEventListener('click', function () {
+            window.location.href = "{{ url_for('main_system') }}";
+            });
+        </script>
+        <button type="button" class="signup-btn">Sign up</button>
+        </div>
+    </form>
+    </div>
+
+
+    <div class="right-section">
+    <nav class="navigation">
+        <a href="#" class="nav-link active">Home</a>
+        <a href="#" class="nav-link">About us</a>
+        <a href="#" class="nav-link">Help</a>
+        <a href="#" class="nav-link">Settings</a>
+    </nav>
+    </div>
+</div>
+</body>
+</html>

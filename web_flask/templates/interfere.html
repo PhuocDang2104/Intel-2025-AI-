@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI REAL-TIME QUALITY INSPECTION</title>
+    <link rel="stylesheet" href="../static/interfere.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header-section">
+            <h2 class="sub-title">A.I.M.I.N.G - <span class="highlight-blue">AIoT Intel®-based system for Monitoring, Inspection & Grading</span></h2>
+        </div>
+
+        <div class="main-content">
+            <!-- LEFT SIDE: Camera Feed + AI Vision Module -->
+            <div class="column left-section">
+                <div class="column-header">
+                    <i class="bi bi-camera-video"></i> Camera Feed
+                </div>
+                <div class="camera-placeholder small">
+                    <img src="{{ camera_url }}" alt="Live Camera Feed" style="width: 100%; border: 1px solid #ccc;">
+                    <div class="box-highlight">[Box highlight]</div>
+                    <div class="overlay-result">[Overlay result]</div>
+                </div>
+
+                <div class="column-header">
+                    <i class="bi bi-cpu"></i> 
+                    AIMING Identify
+                    - CV Module Output
+                </div>
+                <div class="fruit-info-list">
+                    <div class="info-item">
+                        <span class="icon">🍎</span> Fruit Type: 
+                        <span class="value">{{ fruit_type }}</span> 
+                        <small class="confidence-text">(Confidence: {{ fruit_type_confidence }}%)</small>
+                    </div>
+                    <div class="info-item">
+                        <span class="icon">🔍</span> Ripeness: 
+                        <span class="value highlight-ripeness">{{ ripeness }}</span> / 10
+                        <small class="confidence-text">(Confidence: {{ ripeness_confidence }}%)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT SIDE: Sensor + Final AI Output -->
+            <div class="column right-section">
+                <div class="column-header">
+                    <i class="bi bi-lightbulb"></i> NIR Sensor Reading (AS7263)
+                </div>
+                <div class="fruit-info-list">
+                    <div class="info-item">
+                        Wavelengths Input Vector: [680, 730, 760, 810, 860 nm]
+                    </div>
+                    <div class="info-item">
+                        <span class="icon">📈</span> Raw Spectral Values: 
+                        <span class="value">{{ spectral_values }}</span>
+                    </div>
+                </div>
+
+                <div class="model-status" id="modelStatus">
+                    ⏳ Waiting for model input...
+                </div>
+                <script>
+                    function setStatus(state) {
+                        const statusEl = document.getElementById('modelStatus');
+                        if (state === 'waiting') {
+                            statusEl.innerHTML = '⏳ Waiting for model input...';
+                            statusEl.classList.remove('status-done');
+                            statusEl.classList.add('status-running');
+                        } else if (state === 'running') {
+                            statusEl.innerHTML = '🔄 Running NIR Inference...';
+                            statusEl.classList.add('status-running');
+                            statusEl.classList.remove('status-done');
+                        } else if (state === 'done') {
+                            statusEl.innerHTML = '✅ Inference Complete';
+                            statusEl.classList.remove('status-running');
+                            statusEl.classList.add('status-done');
+                        }
+                    }
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const state = "{{ state }}";
+                        setStatus(state);
+                    });
+                </script>
+
+                <div class="column-header infrared-header">
+                    <i class="bi bi-bar-chart-line"></i> 
+                    AIMING Infrared
+                    - AI NIR Deep Learning Output
+                </div>
+                <div class="fruit-info-list">
+                    <div class="info-item">
+                        <span class="icon">🍬</span> °Brix: 
+                        <span class="value highlight-brix">{{ brix }} °Bx</span> 
+                    </div>
+                    <div class="info-item">
+                        <span class="icon">💧</span> Moisture: 
+                        <span class="value highlight-moisture">{{ moisture }}</span>%
+                    </div>
+                    <div class="info-item">
+                        <span class="icon">💡</span> Internal Defect: 
+                        <span class="value highlight-defect">{{ internal_defect_nir }}</span>
+                        <small class="confidence-text">(Confidence: {{ internal_defect_confidence }}%)</small>
+                    </div>
+                    <div class="info-item">
+                        <span class="icon">🦠</span> Disease or Fungal Infection: 
+                        <span class="value highlight-defect">{{ disease_or_fungal }}</span>
+                        <small class="confidence-text">(Confidence: {{ disease_confidence }}%)</small>
+                    </div>
+                    <div class="info-item grade-highlight">
+                        <span class="icon">🏷️</span> Grade: 
+                        <span class="value highlight-grade">{{ grade }}</span>
+                        <small class="confidence-text" style="color: #0071c5; font-size: 0.85em;">
+                            (Confidence: {{ grade_confidence }}%)
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+    </div>
+</body>
+</html>

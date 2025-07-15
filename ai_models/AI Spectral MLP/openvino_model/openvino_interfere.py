@@ -12,14 +12,14 @@ compiled_model = ie.compile_model(model, device_name="CPU")
 
 # 🧾 Input features theo đúng thứ tự huấn luyện
 manual_input = np.array([[
-    0.3945, 0.4124, 0.5250599293797117
+    0.39, 0.40, 0.49
 ,  # NIR wavelengths: 610, 680, 730
-    0.6695815662978335
-, 0.9496887301626904
-, 1.1873615507678188
+    0.54
+, 0.8606887301626904
+, 0.8903615507678188
 ,  # NIR wavelengths: 760, 810, 860
     9,                      # ripeness
-    0, 0, 1                 # one-hot fruit: strawberry
+    1, 0, 0                 # one-hot fruit
 ]], dtype=np.float32)
 
 # 🔁 Chuẩn hóa bằng scaler đã huấn luyện

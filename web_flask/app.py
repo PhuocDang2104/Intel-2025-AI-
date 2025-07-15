@@ -4,15 +4,33 @@ import cv2
 import numpy as np
 import supervision as sv
 from openvino.runtime import Core
-import threading
+import time
+import joblib
+# ⚙️ Load scaler
+scaler = joblib.load(r"C:\Users\ADMIN\Desktop\Intel 2025 AI\ai_models\AI Spectral MLP\scaler.pkl")
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
-socketio = SocketIO(app, async_mode='threading')  # Use threading mode for compatibility
+socketio = SocketIO(app, async_mode='threading')
 
-cam = cv2.VideoCapture(1)
+def init_camera(index=0):
+    print("🔍 Initializing camera...")
+    cam = None
+    for i in range(5):
+        cam = cv2.VideoCapture(index)
+        if cam.isOpened():
+            print("✅ Camera initialized successfully")
+            return cam
+        else:
+            print(f"⚠️ Attempt {i+1}: Failed to open camera. Retrying...")
+            time.sleep(1)
+
+    print("❌ Could not open camera. Falling back to sample video.")
+    return cv2.VideoCapture("static/sample_video.mp4")
+
+cam = init_camera(0)
 
 core = Core()
-device = 'GPU'
+device = 'CPU'
 
 det_model = core.read_model('../ai_models/Detection AI/best.xml')
 det_compiled = core.compile_model(det_model, device)
@@ -25,16 +43,30 @@ apple_input_name = apple_compiled.input(0).any_name
 mango_model = core.read_model("../ai_models/Detection AI/mango_ripeness.xml")
 mango_compiled = core.compile_model(mango_model, device)
 mango_input_name = mango_compiled.input(0).any_name
+
+quality_model = core.read_model("../ai_models/AI Spectral MLP/openvino_model/nir_model_v3.xml")
+quality_compiled = core.compile_model(quality_model, device)
+quality_input_name = quality_compiled.input(0).any_name
+
 class_names = ["Apple", "Dau_chin", "Dau_chua_chin", "Mango"]
 ripeness_label_mango = ["10", "9", "7", "5"]
-ripeness_label_apple = ["10", "9", "7", "5"]
+ripeness_label_apple = ["5", "7", "9", "10"]
+
+spectral_profiles = {
+    'apple_0':   [0.39, 0.40, 0.49, 0.54, 0.86, 0.89],
+    'apple_1':   [0.39, 0.40, 0.49, 0.54, 0.86, 0.89],
+    'apple_2':   [0.36, 0.37, 0.45, 0.51, 0.82, 0.85],
+    'mango_0':   [0.42, 0.44, 0.51, 0.57, 0.88, 0.91],
+    'mango_2':   [0.38, 0.39, 0.47, 0.52, 0.83, 0.87],
+}
 
 latest_result = {
     'fruit_type': '',
     'fruit_type_confidence': 0.0,
     'ripeness': 0.0,
     'ripeness_confidence': 0.0,
-    'state': 'waiting'
+    'state': 'waiting',
+    'quality_prediction': []
 }
 
 def classify_fruit(crop, model, input_name):
@@ -48,12 +80,71 @@ def classify_fruit(crop, model, input_name):
     confidence = float(np.max(output))
     return ripeness, confidence
 
+def infer_quality(fruit, ripeness):
+    key = f"{fruit.lower()}_{ripeness}"
+    spectral = spectral_profiles.get(key)
+    if spectral is None:
+        return [0.0] * 6, "N/A", 0.0
+
+    # ✅ Ánh xạ ripeness index về giá trị thực (5–10)
+    ripeness_value = {
+        'apple': [10, 9, 7, 5],
+        'mango': [10, 9, 7, 5]
+    }.get(fruit.lower(), [0, 0, 0, 0])[ripeness]
+
+    print(f"🧪 Ripeness mapped: index {ripeness} → value {ripeness_value}")
+
+    fruit_one_hot = {
+        'apple': [1, 0, 0],
+        'mango': [0, 1, 0],
+        'strawberry': [0, 0, 1],
+    }.get(fruit.lower(), [0, 0, 0])
+
+    input_vector = np.array([spectral + [ripeness_value] + fruit_one_hot], dtype=np.float32)
+    input_scaled = scaler.transform(input_vector)
+    input_scaled = input_scaled.reshape((1, 10, 1))
+
+    print("🧪 Fruit:", fruit)
+    print("🧪 One-hot vector:", fruit_one_hot)
+    print("🧪 Final input vector:", input_vector)
+    result = quality_compiled.infer_new_request({quality_input_name: input_scaled})
+    outputs = {out.get_any_name(): out for out in quality_compiled.outputs}
+
+    pred_reg    = result[outputs['regression']]
+    pred_grade  = result[outputs['grade']]
+    pred_defect = result[outputs['defect']]
+    pred_fungus = result[outputs['fungus']]
+    print("🔍 Regression (°Brix, Moisture):", pred_reg)
+    print("🔍 Grade class logits (softmax):", pred_grade)
+    print("🔍 Defect probability:", pred_defect)
+    print("🔍 Fungus/Disease probability:", pred_fungus)
+    # 🔍 Lấy grade label từ softmax
+    grade_index = int(np.argmax(pred_grade[0]))
+    grade_label = ['A', 'B', 'C'][grade_index]
+
+    grade_conf = float(np.max(pred_grade[0]))
+    
+
+    grade_conf = float(np.max(pred_grade[0]))
+    prediction = [
+        float(pred_reg[0][0]),      # Brix
+        float(pred_reg[0][1]),      # Moisture
+        grade_conf,                 # Grade confidence (0–1)
+        float(pred_defect[0][0]),   # Defect probability (0–1)
+        float(pred_fungus[0][0])    # Fungus probability (0–1)
+    ]
+    
+    return prediction, grade_label, ripeness_value
+    
+print("🧠 Model Output Names:")
+for i, out in enumerate(quality_compiled.outputs):
+    print(f"{i}: {out.get_any_name()}")
+
 def process_frames():
     global latest_result
     while True:
         success, frame = cam.read()
         if not success:
-            print("Camera read failed")
             break
 
         h, w = frame.shape[:2]
@@ -79,14 +170,10 @@ def process_frames():
             boxes[:, [1, 3]] *= h / 320
             boxes = boxes.astype(int)
 
-            detections = sv.Detections(
-                xyxy=boxes,
-                confidence=scores,
-                class_id=classes
-            )
-
+            detections = sv.Detections(xyxy=boxes, confidence=scores, class_id=classes)
             labels = []
             latest_result['state'] = 'running'
+
             for i, (box, cls_id) in enumerate(zip(boxes, classes)):
                 x1, y1, x2, y2 = box
                 x1 = max(0, x1)
@@ -100,26 +187,34 @@ def process_frames():
                         continue
                 else:
                     continue
+
                 if cls_id == 0:
+                    fruit = 'apple'
                     ripeness, conf = classify_fruit(crop, apple_compiled, apple_input_name)
-                    ripeness_level = ripeness_label_apple[ripeness]
                 elif cls_id == 3:
+                    fruit = 'mango'
                     ripeness, conf = classify_fruit(crop, mango_compiled, mango_input_name)
-                    ripeness_level = ripeness_label_mango[ripeness]
                 else:
                     continue
-                latest_result['fruit_type'] = class_names[cls_id]
-                latest_result['fruit_type_confidence'] = float(scores[i] * 100)
-                latest_result['ripeness'] = int(ripeness_level)
-                latest_result['ripeness_confidence'] = float(conf * 100)
-                latest_result['state'] = 'done'
-                label = f"{class_names[cls_id]} R:{ripeness_level} ({conf:.2f})"
+
+                # ✅ Chính xác:
+                quality, grade_label, ripeness_value= infer_quality(fruit, ripeness)
+
+                latest_result.update({
+                    'fruit_type': fruit,
+                    'fruit_type_confidence': float(scores[i] * 100),
+                    'ripeness': ripeness_value,
+                    'ripeness_confidence': float(conf * 100),
+                    'state': 'done',
+                    'quality_prediction': quality,
+                    'grade_class': grade_label
+                })
+
+                ripeness_label = ripeness_label_apple if fruit == 'apple' else ripeness_label_mango
+                label = f"{fruit.capitalize()} R:{ripeness_label[ripeness]} Q:{[round(float(q), 2) for q in quality]}"
                 labels.append(label)
 
-            # Emit updated results
             socketio.emit('update_detection', latest_result)
-            print("Emitted:", latest_result)  # Debug log
-
             box_annotator = sv.BoundingBoxAnnotator()
             label_annotator = sv.LabelAnnotator(text_position=sv.Position.TOP_LEFT)
             frame = box_annotator.annotate(scene=frame, detections=detections)
@@ -130,10 +225,10 @@ def process_frames():
                 'fruit_type_confidence': 0.0,
                 'ripeness': 0.0,
                 'ripeness_confidence': 0.0,
-                'state': 'waiting'
+                'state': 'waiting',
+                'quality_prediction': [],
             })
             socketio.emit('update_detection', latest_result)
-            print("Emitted (no detection):", latest_result)  # Debug log
 
         ret, buffer = cv2.imencode('.jpg', frame)
         if not ret:
@@ -149,25 +244,7 @@ def home():
 
 @app.route('/home')
 def main_system():
-    return render_template('interfere.html',
-        fruit_type=latest_result['fruit_type'],
-        fruit_type_confidence=latest_result['fruit_type_confidence'],
-        ripeness=latest_result['ripeness'],
-        ripeness_confidence=latest_result['ripeness_confidence'],
-        spectral_values="[321, 542, 432, 612, 451]",
-        brix=12.3,
-        brix_confidence=95.4,
-        moisture=84.5,
-        moisture_confidence=90.2,
-        grade="A",
-        grade_confidence=98.7,
-        internal_defect_nir="No",
-        internal_defect_confidence=91.3,
-        disease_or_fungal="No",
-        disease_confidence=87.5,
-        camera_url="https://via.placeholder.com/640x360?text=Live+Camera+Feed",
-        state="done"
-    )
+    return render_template('interfere.html')
 
 @app.route('/video_feed')
 def video_feed():
@@ -177,10 +254,6 @@ def video_feed():
 def handle_connect():
     emit('update_detection', latest_result)
     print("Client connected, sent initial data:", latest_result)
-
-# Start video processing in a background task
-def start_video_processing():
-    socketio.start_background_task(process_frames)
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)

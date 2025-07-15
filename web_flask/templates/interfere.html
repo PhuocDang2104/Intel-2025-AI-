@@ -10,153 +10,175 @@
 </head>
 <body>
 
+<div class="dashboard-container">
+    <div class="header-section">
+        <h2 class="sub-title">A.I.M.I.N.G - <span class="highlight-blue">AIoT Intel®-based system for Monitoring, Inspection & Grading</span></h2>
+    </div>
 
+    <div class="main-content">
+        <!-- LEFT SIDE: Camera Feed + AI Vision Module -->
+        <div class="column left-section">
+            <div class="column-header">
+                <i class="bi bi-camera-video"></i> Camera Feed
+            </div>
+            <div class="camera-placeholder small">
+                <img src="{{ url_for('video_feed') }}" alt="Live Camera Feed" style="width: 100%; border: 1px solid #ccc;">
+            </div>
+
+            <div class="column-header">
+                <i class="bi bi-cpu"></i> 
+                AIMING Identify
+                - CV Module Output
+            </div>
+            <div class="fruit-info-list">
+                <div class="info-item">
+                    <span class="icon">🍎</span> Fruit Type: 
+                    <span class="value" data-key="fruit_type">{{ fruit_type }}</span> 
+                    <small class="confidence-text" data-key="fruit_type_confidence">(Confidence: {{ fruit_type_confidence }}%)</small>
+                </div>
+                <div class="info-item">
+                    <span class="icon">🔍</span> Ripeness: 
+                    <span class="value highlight-ripeness" data-key="ripeness">{{ ripeness }}</span> / 10
+                    <small class="confidence-text" data-key="ripeness_confidence">(Confidence: {{ ripeness_confidence }}%)</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDE: Sensor + Final AI Output -->
+        <div class="column right-section">
+            <div class="column-header">
+                <i class="bi bi-lightbulb"></i> NIR Sensor Reading (AS7263)
+            </div>
+            <div class="fruit-info-list">
+                <div class="info-item">
+                    Wavelengths Input Vector: [680, 730, 760, 810, 860 nm]
+                </div>
+                <div class="info-item">
+                    <span class="icon">📈</span> Raw Spectral Values: 
+                    <span class="value" data-key="spectral_values">{{ spectral_values }}</span>
+                </div>
+            </div>
+
+            <div class="model-status" id="modelStatus">
+                ⏳ Waiting for model input...
+            </div>
+
+            <div class="column-header infrared-header">
+                <i class="bi bi-bar-chart-line"></i> 
+                AIMING Infrared
+                - AI NIR Deep Learning Output
+            </div>
+            <div class="fruit-info-list">
+                <div class="info-item">
+                    <span class="icon">🍬</span> °Brix: 
+                    <span class="value highlight-brix" data-key="brix">{{ brix }} °Bx</span> 
+                </div>
+                <div class="info-item">
+                    <span class="icon">💧</span> Moisture: 
+                    <span class="value highlight-moisture" data-key="moisture">{{ moisture }}</span>%
+                </div>
+                <div class="info-item">
+                    <span class="icon">💡</span> Internal Defect: 
+                    <span class="value highlight-defect" data-key="internal_defect_nir">{{ internal_defect_nir }}</span>
+                    <small class="confidence-text" data-key="internal_defect_confidence">(Confidence: {{ internal_defect_confidence }}%)</small>
+                </div>
+                <div class="info-item">
+                    <span class="icon">🦠</span> Disease or Fungal Infection: 
+                    <span class="value highlight-defect" data-key="disease_or_fungal">{{ disease_or_fungal }}</span>
+                    <small class="confidence-text" data-key="disease_confidence">(Confidence: {{ disease_confidence }}%)</small>
+                </div>
+                <div class="info-item grade-highlight">
+                    <span class="icon">🏷️</span> Grade: 
+                    <span class="value highlight-grade" data-key="grade">{{ grade }}</span>
+                    <small class="confidence-text" data-key="grade_confidence" style="color: #0071c5; font-size: 0.85em;">
+                        (Confidence: {{ grade_confidence }}%)
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-    <div class="dashboard-container">
-        <div class="header-section">
-            <h2 class="sub-title">A.I.M.I.N.G - <span class="highlight-blue">AIoT Intel®-based system for Monitoring, Inspection & Grading</span></h2>
-        </div>
 
-        <div class="main-content">
-            <!-- LEFT SIDE: Camera Feed + AI Vision Module -->
-            <div class="column left-section">
-                <div class="column-header">
-                    <i class="bi bi-camera-video"></i> Camera Feed
-                </div>
-                    <div class="camera-placeholder small">
-        <img src="{{ url_for('video_feed') }}" alt="Live Camera Feed" style="width: 100%; border: 1px solid #ccc;">
-    </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const socket = io({
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000,
+            transports: ['websocket', 'polling']
+        });
 
+        function setStatus(state) {
+            const statusEl = document.getElementById('modelStatus');
+            if (!statusEl) return;
+            statusEl.classList.remove('status-running', 'status-done');
+            if (state === 'waiting') {
+                statusEl.innerHTML = '⏳ Waiting for model input...';
+            } else if (state === 'running') {
+                statusEl.innerHTML = '🔄 Running Inference...';
+                statusEl.classList.add('status-running');
+            } else if (state === 'done') {
+                statusEl.innerHTML = '✅ Inference Complete';
+                statusEl.classList.add('status-done');
+            }
+        }
 
-                <div class="column-header">
-                    <i class="bi bi-cpu"></i> 
-                    AIMING Identify
-                    - CV Module Output
-                </div>
-                <div class="fruit-info-list">
-                    <div class="info-item">
-                        <span class="icon">🍎</span> Fruit Type: 
-                        <span class="value"data-key="fruit_type">{{ fruit_type }}</span> 
-                        <small class="confidence-text" data-key="fruit_type_confidence">(Confidence: {{ fruit_type_confidence }}%)</small>
-                    </div>
-                    <div class="info-item">
-                        <span class="icon">🔍</span> Ripeness: 
-                        <span class="value highlight-ripeness" data-key="ripeness">{{ ripeness }}</span> / 10
-                        <small class="confidence-text" data-key="ripeness_confidence">(Confidence: {{ ripeness_confidence }}%)</small>
-                    </div>
-                </div>
-                
-            </div>
+        socket.on('connect', () => {
+            console.log('Connected to server.');
+            setStatus('waiting');
+        });
 
-            <!-- RIGHT SIDE: Sensor + Final AI Output -->
-            <div class="column right-section">
-                <div class="column-header">
-                    <i class="bi bi-lightbulb"></i> NIR Sensor Reading (AS7263)
-                </div>
-                <div class="fruit-info-list">
-                    <div class="info-item">
-                        Wavelengths Input Vector: [680, 730, 760, 810, 860 nm]
-                    </div>
-                    <div class="info-item">
-                        <span class="icon">📈</span> Raw Spectral Values: 
-                        <span class="value">{{ spectral_values }}</span>
-                    </div>
-                </div>
+        socket.on('update_detection', (data) => {
+            const updateValue = (key, value, prefix = '', suffix = '') => {
+                const el = document.querySelector(`[data-key="${key}"]`);
+                if (el) el.textContent = `${prefix}${value}${suffix}`;
+            };
 
-                <div class="model-status" id="modelStatus">
-                    ⏳ Waiting for model input...
-                </div>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
-                <script>
-                    document.addEventListener('DOMContentLoaded', () => {
-                        const socket = io({
-                            reconnectionAttempts: 10,
-                            reconnectionDelay: 1000,
-                            transports: ['websocket', 'polling']
-                        });
+            updateValue("fruit_type", data.fruit_type || '');
+            updateValue("fruit_type_confidence", (data.fruit_type_confidence ?? 0).toFixed(1), "(Confidence: ", "%)");
+            updateValue("ripeness", (data.ripeness || 0));
+            updateValue("ripeness_confidence", (data.ripeness_confidence ?? 0).toFixed(1), "(Confidence: ", "%)");
+            updateValue("spectral_values", data.spectral_values?.join(', ') || '');
+            setStatus(data.state || 'waiting');
 
-                        function setStatus(state) {
-                            const statusEl = document.getElementById('modelStatus');
-                            if (!statusEl) return;
-                            statusEl.classList.remove('status-running', 'status-done');
-                            if (state === 'waiting') {
-                                statusEl.innerHTML = '⏳ Waiting for model input...';
-                            } else if (state === 'running') {
-                                statusEl.innerHTML = '🔄 Running Inference...';
-                                statusEl.classList.add('status-running');
-                            } else if (state === 'done') {
-                                statusEl.innerHTML = '✅ Inference Complete';
-                                statusEl.classList.add('status-done');
-                            }
-                        }
+            const q = data.quality_prediction || [];
 
-                        socket.on('connect', () => {
-                            console.log('Connected to server.');
-                            setStatus('waiting');
-                        });
+            const brix = (q[0] ?? 0).toFixed(2);
+            const moisture = (q[1] ?? 0).toFixed(2);
+            const grade_conf = ((q[2] ?? 0) * 100).toFixed(1);
+            const defect_prob = q[3] ?? 0;
+            const disease_prob = q[4] ?? 0;
 
-                        socket.on('update_detection', (data) => {
-                            const updateValue = (key, value, prefix = '', suffix = '') => {
-                                const el = document.querySelector(`[data-key="${key}"]`);
-                                if (el) el.textContent = `${prefix}${value}${suffix}`;
-                            };
+    // 🟡 DÙNG GRADE TỪ BACKEND, KHÔNG PHẢI TÍNH TỪ PROB
+    const grade = data.grade_class || '?';
 
-                            updateValue("fruit_type", data.fruit_type || '');
-                            updateValue("fruit_type_confidence", (data.fruit_type_confidence ?? 0).toFixed(1), "(Confidence: ", "%)");
-                            updateValue("ripeness", data.ripeness || 0);
-                            updateValue("ripeness_confidence", (data.ripeness_confidence ?? 0).toFixed(1), "(Confidence: ", "%)");
-                            setStatus(data.state || 'waiting');
-                        });
+    const defect = defect_prob > 0.5 ? 'Yes' : 'No';
+    const defect_conf = (defect_prob * 100).toFixed(1);
 
+    const disease = disease_prob > 0.5 ? 'Yes' : 'No';
+    const disease_conf = (disease_prob * 100).toFixed(1);
 
-                        socket.on('disconnect', () => {
-                            console.warn('Disconnected from server.');
-                            setStatus('waiting');
-                        });
+    updateValue("brix", brix, '', ' °Bx');
+    updateValue("moisture", moisture, '', '%');
+    updateValue("internal_defect_nir", defect);
+    updateValue("internal_defect_confidence", defect_conf, "(Confidence: ", "%)");
+    updateValue("disease_or_fungal", disease);
+    updateValue("disease_confidence", disease_conf, "(Confidence: ", "%)");
+    updateValue("grade", grade);
+    updateValue("grade_confidence", grade_conf, "(Confidence: ", "%)");
+});
 
-                        socket.on('connect_error', (err) => {
-                            console.error('Socket connection error:', err);
-                            setStatus('waiting');
-                        });
-                    });
-                </script>
+        socket.on('disconnect', () => {
+            console.warn('Disconnected from server.');
+            setStatus('waiting');
+        });
 
-                <div class="column-header infrared-header">
-                    <i class="bi bi-bar-chart-line"></i> 
-                    AIMING Infrared
-                    - AI NIR Deep Learning Output
-                </div>
-                <div class="fruit-info-list">
-                    <div class="info-item">
-                        <span class="icon">🍬</span> °Brix: 
-                        <span class="value highlight-brix">{{ brix }} °Bx</span> 
-                    </div>
-                    <div class="info-item">
-                        <span class="icon">💧</span> Moisture: 
-                        <span class="value highlight-moisture">{{ moisture }}</span>%
-                    </div>
-                    <div class="info-item">
-                        <span class="icon">💡</span> Internal Defect: 
-                        <span class="value highlight-defect">{{ internal_defect_nir }}</span>
-                        <small class="confidence-text">(Confidence: {{ internal_defect_confidence }}%)</small>
-                    </div>
-                    <div class="info-item">
-                        <span class="icon">🦠</span> Disease or Fungal Infection: 
-                        <span class="value highlight-defect">{{ disease_or_fungal }}</span>
-                        <small class="confidence-text">(Confidence: {{ disease_confidence }}%)</small>
-                    </div>
-                    <div class="info-item grade-highlight">
-                        <span class="icon">🏷️</span> Grade: 
-                        <span class="value highlight-grade">{{ grade }}</span>
-                        <small class="confidence-text" style="color: #0071c5; font-size: 0.85em;">
-                            (Confidence: {{ grade_confidence }}%)
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
+        socket.on('connect_error', (err) => {
+            console.error('Socket connection error:', err);
+            setStatus('waiting');
+        });
+    });
+</script>
 
-        
-    </div>
 </body>
 </html>

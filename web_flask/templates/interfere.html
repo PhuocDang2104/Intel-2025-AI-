@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body>
+
+
+</div>
     <div class="dashboard-container">
         <div class="header-section">
             <h2 class="sub-title">A.I.M.I.N.G - <span class="highlight-blue">AIoT Intel®-based system for Monitoring, Inspection & Grading</span></h2>
@@ -20,11 +23,10 @@
                 <div class="column-header">
                     <i class="bi bi-camera-video"></i> Camera Feed
                 </div>
-                <div class="camera-placeholder small">
-                    <img src="{{ camera_url }}" alt="Live Camera Feed" style="width: 100%; border: 1px solid #ccc;">
-                    <div class="box-highlight">[Box highlight]</div>
-                    <div class="overlay-result">[Overlay result]</div>
-                </div>
+                    <div class="camera-placeholder small">
+        <img src="{{ url_for('video_feed') }}" alt="Live Camera Feed" style="width: 100%; border: 1px solid #ccc;">
+    </div>
+
 
                 <div class="column-header">
                     <i class="bi bi-cpu"></i> 
@@ -34,15 +36,16 @@
                 <div class="fruit-info-list">
                     <div class="info-item">
                         <span class="icon">🍎</span> Fruit Type: 
-                        <span class="value">{{ fruit_type }}</span> 
-                        <small class="confidence-text">(Confidence: {{ fruit_type_confidence }}%)</small>
+                        <span class="value"data-key="fruit_type">{{ fruit_type }}</span> 
+                        <small class="confidence-text" data-key="fruit_type_confidence">(Confidence: {{ fruit_type_confidence }}%)</small>
                     </div>
                     <div class="info-item">
                         <span class="icon">🔍</span> Ripeness: 
-                        <span class="value highlight-ripeness">{{ ripeness }}</span> / 10
-                        <small class="confidence-text">(Confidence: {{ ripeness_confidence }}%)</small>
+                        <span class="value highlight-ripeness" data-key="ripeness">{{ ripeness }}</span> / 10
+                        <small class="confidence-text" data-key="ripeness_confidence">(Confidence: {{ ripeness_confidence }}%)</small>
                     </div>
                 </div>
+                
             </div>
 
             <!-- RIGHT SIDE: Sensor + Final AI Output -->
@@ -63,26 +66,58 @@
                 <div class="model-status" id="modelStatus">
                     ⏳ Waiting for model input...
                 </div>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
                 <script>
-                    function setStatus(state) {
-                        const statusEl = document.getElementById('modelStatus');
-                        if (state === 'waiting') {
-                            statusEl.innerHTML = '⏳ Waiting for model input...';
-                            statusEl.classList.remove('status-done');
-                            statusEl.classList.add('status-running');
-                        } else if (state === 'running') {
-                            statusEl.innerHTML = '🔄 Running NIR Inference...';
-                            statusEl.classList.add('status-running');
-                            statusEl.classList.remove('status-done');
-                        } else if (state === 'done') {
-                            statusEl.innerHTML = '✅ Inference Complete';
-                            statusEl.classList.remove('status-running');
-                            statusEl.classList.add('status-done');
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const socket = io({
+                            reconnectionAttempts: 10,
+                            reconnectionDelay: 1000,
+                            transports: ['websocket', 'polling']
+                        });
+
+                        function setStatus(state) {
+                            const statusEl = document.getElementById('modelStatus');
+                            if (!statusEl) return;
+                            statusEl.classList.remove('status-running', 'status-done');
+                            if (state === 'waiting') {
+                                statusEl.innerHTML = '⏳ Waiting for model input...';
+                            } else if (state === 'running') {
+                                statusEl.innerHTML = '🔄 Running Inference...';
+                                statusEl.classList.add('status-running');
+                            } else if (state === 'done') {
+                                statusEl.innerHTML = '✅ Inference Complete';
+                                statusEl.classList.add('status-done');
+                            }
                         }
-                    }
-                    document.addEventListener('DOMContentLoaded', function () {
-                        const state = "{{ state }}";
-                        setStatus(state);
+
+                        socket.on('connect', () => {
+                            console.log('Connected to server.');
+                            setStatus('waiting');
+                        });
+
+                        socket.on('update_detection', (data) => {
+                            const updateValue = (key, value, prefix = '', suffix = '') => {
+                                const el = document.querySelector(`[data-key="${key}"]`);
+                                if (el) el.textContent = `${prefix}${value}${suffix}`;
+                            };
+
+                            updateValue("fruit_type", data.fruit_type || '');
+                            updateValue("fruit_type_confidence", (data.fruit_type_confidence ?? 0).toFixed(1), "(Confidence: ", "%)");
+                            updateValue("ripeness", data.ripeness || 0);
+                            updateValue("ripeness_confidence", (data.ripeness_confidence ?? 0).toFixed(1), "(Confidence: ", "%)");
+                            setStatus(data.state || 'waiting');
+                        });
+
+
+                        socket.on('disconnect', () => {
+                            console.warn('Disconnected from server.');
+                            setStatus('waiting');
+                        });
+
+                        socket.on('connect_error', (err) => {
+                            console.error('Socket connection error:', err);
+                            setStatus('waiting');
+                        });
                     });
                 </script>
 

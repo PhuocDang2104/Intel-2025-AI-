@@ -14,7 +14,7 @@ socketio = SocketIO(app, async_mode='threading')
 
 
 
-cam =cv2.VideoCapture(1)
+cam =cv2.VideoCapture(0)
 if cam.isOpened():
     print("✅ Camera initialized successfully")
 else:
@@ -40,17 +40,18 @@ quality_compiled = core.compile_model(quality_model, device)
 quality_input_name = quality_compiled.input(0).any_name
 
 class_names = ["Apple", "Dau_chin", "Dau_chua_chin", "Mango"]
-ripeness_label_mango = ["5", "7", "9", "10"]
+ripeness_label_mango = ["7", "7", "9", "10"]
 ripeness_label_apple = ["10", "5", "7", "9"]
 
 spectral_profiles = {
-    'apple_0':   [0.39, 0.40, 0.49, 0.54, 0.86, 0.89],
-    'apple_1':   [0.39, 0.40, 0.49, 0.54, 0.86, 0.89],
-    'apple_2':   [0.36, 0.37, 0.45, 0.51, 0.82, 0.85],
-    'mango_0':   [0.42, 0.44, 0.51, 0.57, 0.88, 0.91],
-    'mango_1':   [0.42, 0.44, 0.51, 0.57, 0.88, 0.91],
-    'mango_2':   [0.38, 0.39, 0.47, 0.52, 0.83, 0.87],
-    'mango_3':   [0.38, 0.39, 0.47, 0.52, 0.83, 0.87],
+    'apple_0':   [0.409, 0.395, 0.591, 0.694, 0.939, 1.146],
+    'apple_1':   [0.393, 0.393, 0.605, 0.667, 0.917, 1.129],
+    'apple_2':   [0.394, 0.392, 0.602, 0.666, 0.9175, 1.1293],
+    'apple_3':   [0.4095, 0.3952, 0.5911, 0.694, 0.9393, 1.1456],
+    'mango_0':   [0.384, 0.396, 0.657, 0.702, 0.806, 0.9291],
+    'mango_1':   [0.383, 0.395, 0.656, 0.7027, 0.8064, 0.92751],
+    'mango_2':   [0.384, 0.396, 0.657, 0.702, 0.806, 0.9291],
+    'mango_3':   [0.384, 0.3963, 0.657, 0.7302, 0.806, 0.92951],
 }
 
 latest_result = {
@@ -151,7 +152,7 @@ def process_frames():
         probs = output[4:, :].T
         scores = np.max(probs, axis=1)
         classes = np.argmax(probs, axis=1)
-        mask = scores > 0.78
+        mask = scores > 0.8
         boxes, scores, classes = boxes[mask], scores[mask], classes[mask]
 
         if len(boxes) > 0:

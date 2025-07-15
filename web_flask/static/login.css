@@ -29,14 +29,14 @@ body {
   }
   
   .branding h1 {
-    color: #420202;
+    color: #2e1d6f;
     font-size: 32px;
     margin-bottom: 20px;
   }
 
   .title h2 {
     font-size: 28px;
-    color: #420202;
+    color: #2e1d6f;
     font-weight: bold;
     margin-bottom: 10px;
   }
@@ -60,9 +60,9 @@ body {
 }
 
 .login-form .input-group input:focus {
-    border-color: #420202;
+    border-color: #2e1d6f;
     outline: none;
-    box-shadow: 0 0 5px #420202;
+    box-shadow: 0 0 5px #2e1d6f;
   }
   
   .options {
@@ -75,7 +75,7 @@ body {
   
   .options .forgot-password {
     text-decoration: none;
-    color: #420202;
+    color: #2e1d6f;
   }
   
   .options .forgot-password:hover {
@@ -88,7 +88,7 @@ body {
   }
   
   .buttons .login-btn {
-    background-color: #420202;
+    background-color: #2e1d6f;
     color: #fff;
     padding: 10px 20px;
     border: none;
@@ -98,28 +98,28 @@ body {
   }
   
   .buttons .login-btn:hover {
-    background-color: #420202;
+    background-color: #2e1d6f;
   }
   
   .buttons .signup-btn {
     background-color: transparent;
-    color: #420202;
+    color: #2e1d6f;
     padding: 10px 20px;
-    border: 2px solid #420202;
+    border: 2px solid #2e1d6f;
     border-radius: 5px;
     font-size: 14px;
     cursor: pointer;
   }
   
   .buttons .signup-btn:hover {
-    background-color: #420202;
+    background-color: #2e1d6f;
     color: #fff;
   }
   
 
   .right-section {
     flex: 1;
-    background-image: url(../images/login-background.png);
+    background-image: url(../static/login_background.jpg);
     background-size: cover;
    background-repeat: no-repeat;
    background-position: center;
@@ -144,8 +144,8 @@ body {
   
   
   .nav-link:hover {
-    color: #420202;
-    border-bottom: 2px solid #420202;
+    color: #2e1d6f;
+    border-bottom: 2px solid #2e1d6f;
     transform: scale(1.2);
   }
   

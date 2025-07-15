@@ -7,30 +7,21 @@ from openvino.runtime import Core
 import time
 import joblib
 # ⚙️ Load scaler
-scaler = joblib.load(r"C:\Users\ADMIN\Desktop\Intel 2025 AI\ai_models\AI Spectral MLP\scaler.pkl")
+scaler = joblib.load('../ai_models/AI Spectral MLP/scaler.pkl')
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 socketio = SocketIO(app, async_mode='threading')
 
-def init_camera(index=0):
-    print("🔍 Initializing camera...")
-    cam = None
-    for i in range(5):
-        cam = cv2.VideoCapture(index)
-        if cam.isOpened():
-            print("✅ Camera initialized successfully")
-            return cam
-        else:
-            print(f"⚠️ Attempt {i+1}: Failed to open camera. Retrying...")
-            time.sleep(1)
 
-    print("❌ Could not open camera. Falling back to sample video.")
-    return cv2.VideoCapture("static/sample_video.mp4")
 
-cam = init_camera(0)
+cam =cv2.VideoCapture(1)
+if cam.isOpened():
+    print("✅ Camera initialized successfully")
+else:
+    time.sleep(1)
 
 core = Core()
-device = 'CPU'
+device = 'GPU'
 
 det_model = core.read_model('../ai_models/Detection AI/best.xml')
 det_compiled = core.compile_model(det_model, device)
@@ -40,7 +31,7 @@ apple_model = core.read_model("../ai_models/Detection AI/apple_ripeness.xml")
 apple_compiled = core.compile_model(apple_model, device)
 apple_input_name = apple_compiled.input(0).any_name
 
-mango_model = core.read_model("../ai_models/Detection AI/mango_ripeness.xml")
+mango_model = core.read_model("../ai_models/Detection AI/model.xml")
 mango_compiled = core.compile_model(mango_model, device)
 mango_input_name = mango_compiled.input(0).any_name
 
@@ -49,15 +40,17 @@ quality_compiled = core.compile_model(quality_model, device)
 quality_input_name = quality_compiled.input(0).any_name
 
 class_names = ["Apple", "Dau_chin", "Dau_chua_chin", "Mango"]
-ripeness_label_mango = ["10", "9", "7", "5"]
-ripeness_label_apple = ["5", "7", "9", "10"]
+ripeness_label_mango = ["5", "7", "9", "10"]
+ripeness_label_apple = ["10", "5", "7", "9"]
 
 spectral_profiles = {
     'apple_0':   [0.39, 0.40, 0.49, 0.54, 0.86, 0.89],
     'apple_1':   [0.39, 0.40, 0.49, 0.54, 0.86, 0.89],
     'apple_2':   [0.36, 0.37, 0.45, 0.51, 0.82, 0.85],
     'mango_0':   [0.42, 0.44, 0.51, 0.57, 0.88, 0.91],
+    'mango_1':   [0.42, 0.44, 0.51, 0.57, 0.88, 0.91],
     'mango_2':   [0.38, 0.39, 0.47, 0.52, 0.83, 0.87],
+    'mango_3':   [0.38, 0.39, 0.47, 0.52, 0.83, 0.87],
 }
 
 latest_result = {
@@ -88,8 +81,8 @@ def infer_quality(fruit, ripeness):
 
     # ✅ Ánh xạ ripeness index về giá trị thực (5–10)
     ripeness_value = {
-        'apple': [10, 9, 7, 5],
-        'mango': [10, 9, 7, 5]
+        'apple': [10, 5, 7, 9],
+        'mango': [5, 7, 9, 10]
     }.get(fruit.lower(), [0, 0, 0, 0])[ripeness]
 
     print(f"🧪 Ripeness mapped: index {ripeness} → value {ripeness_value}")

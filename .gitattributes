@@ -1,3 +1,5 @@
 best.bin filter=lfs diff=lfs merge=lfs -text
 *.bin filter=lfs diff=lfs merge=lfs -text
 *.xml filter=lfs diff=lfs merge=lfs -text
+model.bin filter=lfs diff=lfs merge=lfs -text
+model.xml filter=lfs diff=lfs merge=lfs -text
